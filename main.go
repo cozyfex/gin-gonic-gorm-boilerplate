@@ -1,18 +1,26 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"gin-gonic-gorm-boilerplate/configs"
 	"gin-gonic-gorm-boilerplate/internal/db"
+	"gin-gonic-gorm-boilerplate/internal/middleware"
 	"gin-gonic-gorm-boilerplate/internal/routing"
 	"gin-gonic-gorm-boilerplate/internal/util/logger"
 	"gin-gonic-gorm-boilerplate/internal/util/parser"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
-	// 설정 로딩
+	// Loading Config
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("configs")
@@ -49,14 +57,43 @@ func main() {
 	logger.Info(fmt.Sprintf("Config Mode: %s", config.Mode))
 	logger.Info(fmt.Sprintf("Gin Mode: %s", gin.Mode()))
 
-	// DB 초기화
+	// DB Init
 	dbManager := db.NewManager()
 	dbManager.Init(config.DB.Master, config.DB.Replicas)
+	defer func(dbManager *db.Manager) {
+		err := dbManager.Close()
+		if err != nil {
+			logger.Error("db close error")
+			logger.Error(err)
+		}
+	}(dbManager)
 
+	// Init Gin Engine
 	r := gin.Default()
+
+	// Register Middleware
+	r.Use(middleware.AddDbToContext(dbManager))
 
 	// Routing
 	routing.Route(r)
 
-	r.Run(fmt.Sprintf(":%d", config.Server.Port)) // listen and serve on 0.0.0.0:8080
+	go func() {
+		if err := r.Run(fmt.Sprintf(":%d", config.Server.Port)); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error(fmt.Sprintf("listen: %s\n", err))
+		}
+	}()
+
+	// Wait OS Signal
+	quit := make(chan os.Signal)
+	// kill (no param) default sends syscall.SIGTERM
+	// kill -2 is syscall.SIGINT
+	// kill -9 is syscall.SIGKILL but can't be caught, so don't need to add it
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	logger.Warning("Shutting down server...")
+
+	// Graceful shutdown
+	_, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	logger.Warning("Server exiting")
 }

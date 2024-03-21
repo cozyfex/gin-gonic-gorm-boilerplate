@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"gin-gonic-gorm-boilerplate/internal/db"
 	"gin-gonic-gorm-boilerplate/internal/model"
 	"gin-gonic-gorm-boilerplate/internal/repository"
 	"gin-gonic-gorm-boilerplate/internal/service"
@@ -9,7 +10,8 @@ import (
 )
 
 func GetUsers(c *gin.Context) {
-	userRepo := repository.NewUserRepository()
+	dbManager := c.MustGet("dbManager").(*db.Manager)
+	userRepo := repository.NewUserRepository(dbManager)
 	userService := service.NewUserService(userRepo)
 
 	users, err := userService.GetAllUsers()

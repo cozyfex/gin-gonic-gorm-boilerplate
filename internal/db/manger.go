@@ -6,6 +6,7 @@ import (
 	"gin-gonic-gorm-boilerplate/internal/model"
 	"gin-gonic-gorm-boilerplate/internal/util/logger"
 	"gorm.io/gorm"
+	"math/rand"
 )
 
 type Manager struct {
@@ -33,6 +34,21 @@ func (m *Manager) Init(master configs.DBConfig, replicas []configs.DBConfig) {
 		}
 		m.Replicas = append(m.Replicas, reader)
 	}
+}
+
+func (m *Manager) Writer() *gorm.DB {
+	return m.Master
+}
+
+func (m *Manager) Reader() *gorm.DB {
+	return m.Replicas[rand.Intn(len(m.Replicas))]
+}
+
+func (m *Manager) ReaderChoice(i int) *gorm.DB {
+	if i >= len(m.Replicas) {
+		return m.Replicas[0]
+	}
+	return m.Replicas[i]
 }
 
 func (m *Manager) Close() error {
