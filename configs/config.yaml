@@ -1,0 +1,30 @@
+mode: dev
+
+server:
+  port: 8080
+
+db:
+  master:
+    type: sqlite
+    host: write-db-host
+    port: 5432
+    dbName: master.db
+    user: youruser
+    password: yourpass
+    charSet: utf8
+    sslMode: disable
+    timezone: Asia/Shanghai
+  replicas:
+    - type: sqlite
+      host: read-db-host
+      port: 5432
+      dbName: slave.db
+      user: youruser
+      password: yourpass
+      charSet: utf8
+      sslMode: disable
+      timezone: Asia/Shanghai
+
+logging:
+  level: debug
+  format: text
