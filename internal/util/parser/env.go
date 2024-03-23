@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func ReplicaParser() *[]configs.DBConfig {
+func Replicas() *[]configs.DBConfig {
 	var replicas []configs.DBConfig
 	prefix := "DB_REPLICAS_"
 	suffix := []string{"_TYPE", "_HOST", "_PORT", "_DBNAME", "_USER", "_PASSWORD", "_CHARSET", "_SSLMODE", "_TIMEZONE"}

@@ -1,12 +1,14 @@
-package db
+package database
 
 import (
 	"fmt"
+	"math/rand"
+
+	"gorm.io/gorm"
+
 	"gin-gonic-gorm-boilerplate/configs"
 	"gin-gonic-gorm-boilerplate/internal/model"
 	"gin-gonic-gorm-boilerplate/internal/util/logger"
-	"gorm.io/gorm"
-	"math/rand"
 )
 
 type Manager struct {

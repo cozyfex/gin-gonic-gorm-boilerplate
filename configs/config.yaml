@@ -5,25 +5,25 @@ server:
 
 db:
   master:
-    type: sqlite
-    host: write-db-host
+    type: postgres
+    host: localhost
     port: 5432
-    dbName: master.db
-    user: youruser
-    password: yourpass
+    dbName: postgres
+    user: postgres
+    password: postgres1234
     charSet: utf8
     sslMode: disable
-    timezone: Asia/Shanghai
+    timezone: Asia/Seoul
   replicas:
-    - type: sqlite
-      host: read-db-host
+    - type: postgres
+      host: localhost
       port: 5432
-      dbName: slave.db
-      user: youruser
-      password: yourpass
+      dbName: postgres
+      user: postgres
+      password: postgres1234
       charSet: utf8
       sslMode: disable
-      timezone: Asia/Shanghai
+      timezone: Asia/Seoul
 
 logging:
   level: debug

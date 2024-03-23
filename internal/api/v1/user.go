@@ -1,20 +1,21 @@
 package v1
 
 import (
-	"gin-gonic-gorm-boilerplate/internal/db"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	"gin-gonic-gorm-boilerplate/internal/database"
 	"gin-gonic-gorm-boilerplate/internal/model"
 	"gin-gonic-gorm-boilerplate/internal/repository"
 	"gin-gonic-gorm-boilerplate/internal/service"
-	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
-func GetUsers(c *gin.Context) {
-	dbManager := c.MustGet("dbManager").(*db.Manager)
-	userRepo := repository.NewUserRepository(dbManager)
+func ListUser(c *gin.Context, db *database.Manager) {
+	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
 
-	users, err := userService.GetAllUsers()
+	users, err := userService.ListUser()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -22,8 +23,8 @@ func GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"users": users})
 }
 
-func PostUser(c *gin.Context) {
-	userRepo := repository.NewUserRepository()
+func CreateUser(c *gin.Context, db *database.Manager) {
+	userRepo := repository.NewUserRepository(db)
 	userService := service.NewUserService(userRepo)
 
 	var user model.User
@@ -34,6 +35,18 @@ func PostUser(c *gin.Context) {
 	if err := userService.CreateUser(&user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+	c.JSON(http.StatusOK, gin.H{"user": user})
+}
+
+func User(c *gin.Context, db *database.Manager) {
+	email := c.Param("email")
+	userRepo := repository.NewUserRepository(db)
+	userService := service.NewUserService(userRepo)
+
+	user, err := userService.User(email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 	c.JSON(http.StatusOK, gin.H{"user": user})
 }

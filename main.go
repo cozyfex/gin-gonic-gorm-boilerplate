@@ -4,19 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gin-gonic-gorm-boilerplate/configs"
-	"gin-gonic-gorm-boilerplate/internal/db"
-	"gin-gonic-gorm-boilerplate/internal/middleware"
-	"gin-gonic-gorm-boilerplate/internal/routing"
-	"gin-gonic-gorm-boilerplate/internal/util/logger"
-	"gin-gonic-gorm-boilerplate/internal/util/parser"
-	"github.com/gin-gonic/gin"
-	"github.com/spf13/viper"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
+
+	"gin-gonic-gorm-boilerplate/configs"
+	"gin-gonic-gorm-boilerplate/internal/database"
+	"gin-gonic-gorm-boilerplate/internal/middleware"
+	"gin-gonic-gorm-boilerplate/internal/routing"
+	"gin-gonic-gorm-boilerplate/internal/util/logger"
+	"gin-gonic-gorm-boilerplate/internal/util/parser"
 )
 
 func main() {
@@ -36,12 +38,9 @@ func main() {
 		logger.Error(fmt.Sprintf("unable to decode into struct, %v", err))
 	}
 
-	if *parser.ReplicaParser() != nil {
-		config.DB.Replicas = *parser.ReplicaParser()
+	if *parser.Replicas() != nil {
+		config.DB.Replicas = *parser.Replicas()
 	}
-
-	logger.Warning(config.DB.Master.Port)
-	logger.Warning(config.DB.Replicas[0].Port)
 
 	switch config.Mode {
 	case "dev":
@@ -58,24 +57,25 @@ func main() {
 	logger.Info(fmt.Sprintf("Gin Mode: %s", gin.Mode()))
 
 	// DB Init
-	dbManager := db.NewManager()
-	dbManager.Init(config.DB.Master, config.DB.Replicas)
-	defer func(dbManager *db.Manager) {
+	db := database.NewManager()
+	db.Init(config.DB.Master, config.DB.Replicas)
+	defer func(dbManager *database.Manager) {
 		err := dbManager.Close()
 		if err != nil {
 			logger.Error("db close error")
 			logger.Error(err)
 		}
-	}(dbManager)
+	}(db)
 
 	// Init Gin Engine
+	gin.ForceConsoleColor()
 	r := gin.Default()
 
 	// Register Middleware
-	r.Use(middleware.AddDbToContext(dbManager))
+	r.Use(middleware.AddDbToContext(db))
 
 	// Routing
-	routing.Route(r)
+	routing.Route(r, db)
 
 	go func() {
 		if err := r.Run(fmt.Sprintf(":%d", config.Server.Port)); err != nil && !errors.Is(err, http.ErrServerClosed) {

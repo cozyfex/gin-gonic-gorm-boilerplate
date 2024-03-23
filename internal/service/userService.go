@@ -15,12 +15,15 @@ func NewUserService(repo *repository.UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-// GetAllUsers 는 모든 사용자를 조회합니다.
-func (s *UserService) GetAllUsers() ([]model.User, error) {
+// ListUser 는 모든 사용자를 조회합니다.
+func (s *UserService) ListUser() ([]model.User, error) {
 	return s.repo.FindAll()
 }
 
 // CreateUser 는 새로운 사용자를 생성합니다.
 func (s *UserService) CreateUser(user *model.User) error {
-	return s.repo.Save(user)
+	return s.repo.Create(user)
 }
+
+// User 는 대상 사용자를 조회합니다.
+func (s *UserService) User(email string) (model.User, error) { return s.repo.User(email) }
