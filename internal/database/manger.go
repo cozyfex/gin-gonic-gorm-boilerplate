@@ -26,7 +26,10 @@ func (m *Manager) Init(master configs.DBConfig, replicas []configs.DBConfig) {
 	if err != nil {
 		logger.Error(fmt.Sprintf("failed to connect to Master database: %v", err))
 	}
-	m.Master.AutoMigrate(&model.User{})
+
+	if master.Migrate {
+		m.Master.AutoMigrate(&model.User{})
+	}
 
 	var reader *gorm.DB
 	for i, r := range replicas {
@@ -35,6 +38,10 @@ func (m *Manager) Init(master configs.DBConfig, replicas []configs.DBConfig) {
 			logger.Error(fmt.Sprintf("failed to connect to Replica #%d: %s database: %v", i, r.Host, err))
 		}
 		m.Replicas = append(m.Replicas, reader)
+	}
+
+	if len(m.Replicas) == 0 {
+		m.Replicas = append(m.Replicas, m.Master)
 	}
 }
 

@@ -16,6 +16,7 @@ type ServerConfig struct {
 
 type DBConfig struct {
 	Type     string
+	Migrate  bool
 	Host     string
 	Port     int
 	DBName   string

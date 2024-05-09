@@ -1,8 +1,9 @@
 package middleware
 
 import (
-	"gin-gonic-gorm-boilerplate/internal/database"
 	"github.com/gin-gonic/gin"
+
+	"gin-gonic-gorm-boilerplate/internal/database"
 )
 
 func AddDbToContext(m *database.Manager) gin.HandlerFunc {

@@ -2,8 +2,9 @@ package logger
 
 import (
 	"fmt"
-	"github.com/gookit/color"
 	"time"
+
+	"github.com/gookit/color"
 )
 
 func PrintColor(c color.Color, mode string, value interface{}) {

@@ -2,11 +2,15 @@ package parser
 
 import (
 	"fmt"
-	"gin-gonic-gorm-boilerplate/configs"
-	"gin-gonic-gorm-boilerplate/internal/util/logger"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/spf13/viper"
+
+	"gin-gonic-gorm-boilerplate/configs"
+	"gin-gonic-gorm-boilerplate/internal/util/logger"
 )
 
 func Replicas() *[]configs.DBConfig {
@@ -64,4 +68,33 @@ func Replicas() *[]configs.DBConfig {
 	}
 
 	return &replicas
+}
+
+func BindEnvs(envPrefix string, configs interface{}, configPrefix string) {
+	t := reflect.TypeOf(configs)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		if field.Type.Kind() == reflect.Struct {
+			prefix := fmt.Sprintf("%s%s.", configPrefix, field.Tag.Get("mapstructure"))
+			BindEnvs(envPrefix, reflect.New(field.Type).Interface(), prefix)
+		} else {
+			prefix := func(p string) string {
+				if p == "" {
+					return ""
+				} else {
+					return p + "_"
+				}
+			}(envPrefix)
+			key := configPrefix + field.Tag.Get("mapstructure")
+			env := prefix + strings.Replace(strings.ToUpper(key), ".", "_", -1)
+			err := viper.BindEnv(key, env)
+			if err != nil {
+				logger.Error("env mapping error")
+			}
+		}
+	}
 }

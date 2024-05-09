@@ -19,6 +19,7 @@ import (
 	"gin-gonic-gorm-boilerplate/internal/routing"
 	"gin-gonic-gorm-boilerplate/internal/util/logger"
 	"gin-gonic-gorm-boilerplate/internal/util/parser"
+	"gin-gonic-gorm-boilerplate/internal/ws"
 )
 
 func main() {
@@ -34,6 +35,8 @@ func main() {
 	viper.AutomaticEnv()
 
 	var config configs.Config
+	parser.BindEnvs("", &config, "")
+
 	if err := viper.Unmarshal(&config); err != nil {
 		logger.Error(fmt.Sprintf("unable to decode into struct, %v", err))
 	}
@@ -58,14 +61,20 @@ func main() {
 
 	// DB Init
 	db := database.NewManager()
-	db.Init(config.DB.Master, config.DB.Replicas)
-	defer func(dbManager *database.Manager) {
-		err := dbManager.Close()
-		if err != nil {
-			logger.Error("db close error")
-			logger.Error(err)
-		}
-	}(db)
+	if config.DB.Master.DBName != "" {
+		db.Init(config.DB.Master, config.DB.Replicas)
+		defer func(dbManager *database.Manager) {
+			err := dbManager.Close()
+			if err != nil {
+				logger.Error("db close error")
+				logger.Error(err)
+			}
+		}(db)
+	}
+
+	// Init WebSocket
+	hub := ws.NewHub()
+	go hub.Run()
 
 	// Init Gin Engine
 	gin.ForceConsoleColor()
@@ -75,7 +84,7 @@ func main() {
 	r.Use(middleware.AddDbToContext(db))
 
 	// Routing
-	routing.Route(r, db)
+	routing.Route(r, db, hub)
 
 	go func() {
 		if err := r.Run(fmt.Sprintf(":%d", config.Server.Port)); err != nil && !errors.Is(err, http.ErrServerClosed) {
